@@ -1,27 +1,34 @@
 const fs = require('fs');
 const express = require('express');
+const morgan = require('morgan');
+
 const app = express();
 const port = 3000;
 
-//Middleware that allows us to add data to the request body
+//MIDDLEWARE
+app.use(morgan('dev'));
 app.use(express.json());
 
-// app.get('/', (req, res) => {
-//   res.status(200).json({ message: 'Hello from the server', app: 'Natours' });
-// });
+app.use((req, res, next) => {
+  console.log('Hello from the middleware');
+  next();
+});
 
-// app.post('/', (req, res) => {
-//   res.send('You can post to this endpoint');
-// });
+app.use((req, res, next) => {
+  req.requestTime = new Date().toISOString(0);
+  next();
+});
 
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
 );
 
+//ROUTE HANDLING
 const getAllTours = (req, res) => {
   res.status(200).json({
     status: 'success',
     results: tours.length,
+    requestedTime: req.requestTime,
     data: {
       tours,
     },
@@ -97,19 +104,16 @@ const deleteTour = (req, res) => {
   });
 };
 
-// app.get('/api/v1/tours', getAllTours);
-// app.post('/api/v1/tours', addTour);
-// app.get('/api/v1/tours/:id', getTour);
-// app.patch('/api/v1/tours/:id', updateTour);
-// app.delete('/api/v1/tours/:id', deleteTour);
-
+//ROUTES
 app.route('/api/v1/tours').get(getAllTours).post(addTour);
+
 app
   .route('/api/v1/tours/:id')
   .get(getTour)
   .patch(updateTour)
   .delete(deleteTour);
 
+//SERVER
 app.listen(port, () => {
   console.log(`Running on port ${port}`);
 });
