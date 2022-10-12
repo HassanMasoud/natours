@@ -1,12 +1,23 @@
 const Tour = require('../models/tourModel');
 
+//Creating an alias for popular queried documents
+exports.topToursAlias = (req, res, next) => {
+  req.query.price = { lte: 1500 };
+  req.query.sort = '-ratingsAverage';
+  req.query.limit = '5';
+  req.query.fields = 'name,difficulty,price,summary';
+  next();
+};
+
 exports.getAllTours = async (req, res) => {
   try {
+    console.log(req.query);
     // Filtering
     //create a copy of the object and then delete each of the reserved fields from the new object
     const queryObj = { ...req.query };
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((query) => delete queryObj[query]);
+    console.log(queryObj);
 
     // Advance Filtering
     //turn the filtered object into a string and add dollar signs to any of the reserved keywords

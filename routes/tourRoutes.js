@@ -5,6 +5,11 @@ const router = express.Router();
 
 // router.param('id', tourController.checkID);
 
+// Use this alias route to get frequently queried documents by leveraging middleware
+router
+  .route('/top-5-cheap')
+  .get(tourController.topToursAlias, tourController.getAllTours);
+
 router
   .route('/')
   .get(tourController.getAllTours)
