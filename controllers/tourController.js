@@ -13,6 +13,7 @@ exports.getAllTours = async (req, res) => {
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gt|gte|lt|lte)\b/g, (match) => `$${match}`);
 
+    // This returns another query which we can chain methods to such as sort, select, skip, limit etc.
     const query = Tour.find(JSON.parse(queryStr));
 
     // Sorting
@@ -33,7 +34,19 @@ exports.getAllTours = async (req, res) => {
       query.select('-__v');
     }
 
+    // Pagination
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 100;
+    const skip = (page - 1) * limit;
+    query.skip(skip).limit(limit);
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+      if (skip >= numTours) throw new Error('This page does not exist');
+    }
+
     // Execute Query
+    // After all the methods are chained together, we await the final query and return it.
     const tours = await query;
 
     res.status(200).json({
