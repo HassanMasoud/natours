@@ -25,10 +25,10 @@ exports.getAllTours = async (req, res) => {
       query.sort('-createdOn name');
     }
 
-    //Limiting results (Projecting)
-    if (req.query.limit) {
-      const limitingCriteria = req.query.limit.split(',').join(' ');
-      query.select(limitingCriteria);
+    //Field Limiting(Projecting)
+    if (req.query.fields) {
+      const fields = req.query.fields.split(',').join(' ');
+      query.select(fields);
     } else {
       query.select('-__v');
     }
