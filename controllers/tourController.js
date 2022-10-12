@@ -1,4 +1,5 @@
 const Tour = require('../models/tourModel');
+const APIFeatures = require('../utils/apiFeatures');
 
 //Creating an alias for popular queried documents
 exports.topToursAlias = (req, res, next) => {
@@ -11,54 +12,16 @@ exports.topToursAlias = (req, res, next) => {
 
 exports.getAllTours = async (req, res) => {
   try {
-    console.log(req.query);
-    // Filtering
-    //create a copy of the object and then delete each of the reserved fields from the new object
-    const queryObj = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach((query) => delete queryObj[query]);
-    console.log(queryObj);
-
-    // Advance Filtering
-    //turn the filtered object into a string and add dollar signs to any of the reserved keywords
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gt|gte|lt|lte)\b/g, (match) => `$${match}`);
-
-    // This returns another query which we can chain methods to such as sort, select, skip, limit etc.
-    const query = Tour.find(JSON.parse(queryStr));
-
-    // Sorting
-    if (req.query.sort) {
-      //take all sorting criteria and remove commas to have one string
-      const sortCriteria = req.query.sort.split(',').join(' ');
-      query.sort(sortCriteria);
-    } else {
-      //otherwise default to sorting by most recent and in alphabetical order
-      query.sort('-createdOn name');
-    }
-
-    //Field Limiting(Projecting)
-    if (req.query.fields) {
-      const fields = req.query.fields.split(',').join(' ');
-      query.select(fields);
-    } else {
-      query.select('-__v');
-    }
-
-    // Pagination
-    const page = req.query.page * 1 || 1;
-    const limit = req.query.limit * 1 || 100;
-    const skip = (page - 1) * limit;
-    query.skip(skip).limit(limit);
-
-    if (req.query.page) {
-      const numTours = await Tour.countDocuments();
-      if (skip >= numTours) throw new Error('This page does not exist');
-    }
+    // Tour.find() returns a query. Pass in this query and the query string from the request body to the new class.
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
 
     // Execute Query
-    // After all the methods are chained together, we await the final query and return it.
-    const tours = await query;
+    // After all the query methods are chained together, we await the final query and return it.
+    const tours = await features.query;
 
     res.status(200).json({
       status: 'success',
