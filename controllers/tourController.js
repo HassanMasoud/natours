@@ -25,6 +25,14 @@ exports.getAllTours = async (req, res) => {
       query.sort('-createdOn name');
     }
 
+    //Limiting results (Projecting)
+    if (req.query.limit) {
+      const limitingCriteria = req.query.limit.split(',').join(' ');
+      query.select(limitingCriteria);
+    } else {
+      query.select('-__v');
+    }
+
     // Execute Query
     const tours = await query;
 
