@@ -15,6 +15,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     name: req.body.name,
     email: req.body.email,
     photo: req.body.photo,
+    role: req.body.role,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
     passwordChangedAt: req.body.passwordChangedAt,
@@ -91,7 +92,23 @@ exports.protect = catchAsync(async function (req, res, next) {
     );
   }
 
-  //Grant access to protected route
+  //Add the current user to the request, then grant access to protected route
   req.user = currentUser;
   next();
 });
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    //We have access to the current user in the request after adding them in the protect middleware
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError(
+          "You don't have the permission to perform this action",
+          403
+        )
+      );
+    }
+
+    next();
+  };
+};
