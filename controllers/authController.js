@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const sendEmail = require('../utils/email');
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -39,7 +40,7 @@ exports.login = catchAsync(async (req, res, next) => {
   //check whether both email and password have been submitted
   if (!email || !password) {
     return next(
-      new AppError('Please provide your email address and password', 400)
+      new AppError('Please provide your email address and password.', 400)
     );
   }
 
@@ -48,7 +49,7 @@ exports.login = catchAsync(async (req, res, next) => {
 
   //if user exits, then compare passwords. If either return false, throw error
   if (!user || !(await user.correctPassword(password, user.password))) {
-    return next(new AppError('Incorrect login credentials', 401));
+    return next(new AppError('Incorrect login credentials.', 401));
   }
 
   const token = signToken(user._id);
@@ -81,14 +82,14 @@ exports.protect = catchAsync(async function (req, res, next) {
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
     return next(
-      new AppError('The user belonging to this token no longer exists', 401)
+      new AppError('The user belonging to this token no longer exists.', 401)
     );
   }
 
   //Confirm that the user hasn't changed the password since issuing the token
   if (currentUser.changedPassword(decoded.iat)) {
     return next(
-      new AppError('You recently changed your password, please log in again')
+      new AppError('You recently changed your password, please log in again.')
     );
   }
 
@@ -103,7 +104,7 @@ exports.restrictTo = (...roles) => {
     if (!roles.includes(req.user.role)) {
       return next(
         new AppError(
-          "You don't have the permission to perform this action",
+          "You don't have the permission to perform this action.",
           403
         )
       );
@@ -112,3 +113,43 @@ exports.restrictTo = (...roles) => {
     next();
   };
 };
+
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) {
+    return next(
+      new AppError('There is no username with that email address.', 404)
+    );
+  }
+
+  const resetToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+
+  const resetURL = `${req.protocol}://${req.get(
+    'host'
+  )}/api/v1/users/resetPassword/${resetToken}`;
+  const message = `Forgot your password? Submit your new and confirmed passwords to ${resetURL}. \nIf you didn't forget your password, please ignore this email.`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Your password reset token. Valid for 10 minutes',
+      message,
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Token successfully sent to email',
+    });
+  } catch (error) {
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+    return next(
+      new AppError(
+        'There was a problem sending the email. Try again later.',
+        500
+      )
+    );
+  }
+});
