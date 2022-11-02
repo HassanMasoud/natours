@@ -12,6 +12,19 @@ const signToken = (id) => {
   });
 };
 
+const createTokenSign = (user, statusCode, res) => {
+  //payload, secret, options
+  const token = signToken(user._id);
+
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  });
+};
+
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
     name: req.body.name,
@@ -23,16 +36,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordChangedAt: req.body.passwordChangedAt,
   });
 
-  //payload, secret, options
-  const token = signToken(newUser._id);
-
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: {
-      user: newUser,
-    },
-  });
+  createTokenSign(newUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -53,11 +57,7 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Incorrect login credentials.', 401));
   }
 
-  const token = signToken(user._id);
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createTokenSign(user, 200, res);
 });
 
 exports.protect = catchAsync(async function (req, res, next) {
@@ -180,9 +180,19 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   //Log user in and send token
-  const token = signToken(user._id);
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createTokenSign(user, 200, res);
+});
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select('+password');
+
+  if (!(await user.correctPassword(req.body.currentPassword, user.password))) {
+    return next(new AppError('Incorrect password.', 401));
+  }
+
+  user.password = req.body.newPassword;
+  user.passwordConfirm = req.body.passwordConfirm;
+  await user.save();
+
+  createTokenSign(user, 200, res);
 });
