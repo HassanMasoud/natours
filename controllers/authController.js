@@ -7,13 +7,13 @@ const catchAsync = require('../utils/catchAsync');
 const sendEmail = require('../utils/email');
 
 const signToken = (id) => {
+  //payload, secret, options
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
 
 const createTokenSign = (user, statusCode, res) => {
-  //payload, secret, options
   const token = signToken(user._id);
 
   res.status(statusCode).json({
