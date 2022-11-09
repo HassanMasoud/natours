@@ -11,18 +11,6 @@ const filterObj = (obj, ...allowedFields) => {
   return newObj;
 };
 
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find();
-
-  res.status(200).json({
-    status: 'success',
-    length: users.length,
-    data: {
-      users,
-    },
-  });
-});
-
 exports.updateMe = async (req, res, next) => {
   //check whether user is trying to update password
   if (req.body.password || req.body.passwordConfirm) {
@@ -67,6 +55,7 @@ exports.createUser = (req, res) => {
   });
 };
 
+exports.getAllUsers = factory.getAll(User);
 exports.getUser = factory.getOne(User);
 // DO NOT update password with this.
 exports.updateUser = factory.updateOne(User);
