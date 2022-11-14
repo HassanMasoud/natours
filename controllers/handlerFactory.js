@@ -17,6 +17,7 @@ exports.getAll = (Model) =>
 
     // Execute Query
     // After all the query methods are chained together, we await the final query and return it.
+    // const doc = await features.query.explain();
     const doc = await features.query;
 
     res.status(200).json({
