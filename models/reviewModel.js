@@ -10,8 +10,8 @@ const reviewSchema = new mongoose.Schema(
     rating: {
       type: Number,
       required: true,
-      min: 1,
-      max: 5,
+      min: [1, 'The rating must be at least 1.0'],
+      max: [5, 'The rating cannot exceed 5.0'],
     },
     createdAt: {
       type: Date,
@@ -34,6 +34,8 @@ const reviewSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+
+reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
 
 // Query Middleware
 reviewSchema.pre(/^find/, function (next) {
