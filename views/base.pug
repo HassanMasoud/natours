@@ -3,7 +3,7 @@ html
   head
     meta(charset='UTF-8')
     meta(name='viewport' content='width=device-width, initial-scale=1.0')
-    title Natours | Exciting Tours For Adventurous People
+    title Natours | #{title}
     link(rel='stylesheet' href='css/style.css')
     link(rel='shortcut icon' type='imageng' href='img/favicon.png')
     link(rel='stylesheet' href='https://fonts.googleapis.com/css?family=Lato:300,300i,700')
@@ -13,7 +13,9 @@ html
     include _header
     
     // Content
-    main.main
+    //- main.main
+    block content
+      h1 This is a placeholder heading
       
     // Footer
     include _footer
