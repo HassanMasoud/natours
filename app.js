@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
@@ -13,8 +14,13 @@ const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
 
 const app = express();
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, 'views'));
 
 // GLOBAL MIDDLEWARE
+// Serving static files
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Set security HTTP headers
 app.use(helmet());
 
@@ -47,9 +53,6 @@ app.use(
   })
 );
 
-// Serving static files
-app.use(express.static(`${__dirname}/public`));
-
 // Data sanitization against NoSQL query injection
 app.use(mongoSanitize());
 
@@ -74,6 +77,10 @@ app.use(
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString(0);
   next();
+});
+
+app.get('/', (req, res) => {
+  res.status(200).render('base');
 });
 
 //MOUNT ROUTERS
