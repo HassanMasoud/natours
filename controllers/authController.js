@@ -114,6 +114,32 @@ exports.protect = catchAsync(async function (req, res, next) {
   next();
 });
 
+exports.isLoggedIn = async function (req, res, next) {
+  if (req.cookies.jwt) {
+    //Verify the token
+    const decoded = await promisify(jwt.verify)(
+      req.cookies.jwt,
+      process.env.JWT_SECRET
+    );
+
+    //Check whether user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return next();
+    }
+
+    //Confirm that the user hasn't changed the password since issuing the token
+    if (currentUser.changedPassword(decoded.iat)) {
+      return next();
+    }
+
+    //Add the current user to the request, then grant access to protected route
+    res.locals.user = currentUser;
+    return next();
+  }
+  next();
+};
+
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
     //We have access to the current user in the request after adding them in the protect middleware
