@@ -73,16 +73,6 @@ exports.login = catchAsync(async (req, res, next) => {
   createTokenSign(user, 200, res);
 });
 
-exports.logout = (req, res) => {
-  res.cookie('jwt', 'loggedout', {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true,
-  });
-  res.status(200).json({
-    status: 'success',
-  });
-};
-
 exports.protect = catchAsync(async function (req, res, next) {
   //Retrieve token from header
   let token;
@@ -125,32 +115,29 @@ exports.protect = catchAsync(async function (req, res, next) {
 });
 
 exports.isLoggedIn = async function (req, res, next) {
-  try {
-    if (req.cookies.jwt) {
-      //Verify the token
-      const decoded = await promisify(jwt.verify)(
-        req.cookies.jwt,
-        process.env.JWT_SECRET
-      );
+  if (req.cookies.jwt) {
+    //Verify the token
+    const decoded = await promisify(jwt.verify)(
+      req.cookies.jwt,
+      process.env.JWT_SECRET
+    );
 
-      //Check whether user still exists
-      const currentUser = await User.findById(decoded.id);
-      if (!currentUser) {
-        return next();
-      }
-
-      //Confirm that the user hasn't changed the password since issuing the token
-      if (currentUser.changedPassword(decoded.iat)) {
-        return next();
-      }
-
-      //Add the current user to the request, then grant access to protected route
-      res.locals.user = currentUser;
+    //Check whether user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
       return next();
     }
-  } catch (error) {
+
+    //Confirm that the user hasn't changed the password since issuing the token
+    if (currentUser.changedPassword(decoded.iat)) {
+      return next();
+    }
+
+    //Add the current user to the request, then grant access to protected route
+    res.locals.user = currentUser;
     return next();
   }
+  next();
 };
 
 exports.restrictTo = (...roles) => {
